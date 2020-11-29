@@ -24,6 +24,13 @@
 
 #define MAX_CALLBACKS 32
 
+// By default, the date will be included along
+// with the time in log files.
+static bool include_fdate = true;
+// The opposite holds true for content printed
+// out to stderr.
+static bool include_sdate = false;
+
 typedef struct {
   log_LogFn fn;
   void *udata;
@@ -49,10 +56,35 @@ static const char *level_colors[] = {
 };
 #endif
 
+// Date in file?
+void set_fdate(bool choice) {
+  if (choice == true) {
+    include_fdate = true;
+  }
+  else {
+    include_fdate = false;
+  }
+}
+
+// Date in stderr?
+void set_sdate(bool choice) {
+  if (choice == true) {
+    include_sdate = true;
+  }
+  else {
+    include_sdate = false;
+  }
+}
+
 
 static void stdout_callback(log_Event *ev) {
   char buf[64];
-  buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+  if (include_fdate == true) {
+    buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+  }
+  else {
+    buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
+  }
 #ifdef LOG_USE_COLOR
   fprintf(
     ev->udata, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
@@ -71,7 +103,12 @@ static void stdout_callback(log_Event *ev) {
 
 static void file_callback(log_Event *ev) {
   char buf[64];
-  buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+  if (include_sdate == true) {
+    buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+  }
+  else {
+    buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
+  }
   fprintf(
     ev->udata, "%s %-5s %s:%d: ",
     buf, level_strings[ev->level], ev->file, ev->line);
